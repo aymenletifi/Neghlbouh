@@ -71,7 +71,7 @@
                   justify="center"
                   md="3"
                 >
-                  <div class="mb-0 font">الوجهة : {{ item.where }}</div>
+                  <div class="mb-0 font">الوجهة : {{ item.zone }}</div>
                   <v-divider inset vertical></v-divider>
                 </v-col>
                 <!-- buttons Cancel -->
@@ -109,7 +109,14 @@
                       md="5"
                     >
                       <div v-if="item.state === 1">
-                        <v-btn class="mb-5  " color="error" fab icon>
+                        <v-btn
+                          class="mb-5  "
+                          color="error"
+                          fab
+                          icon
+                          @click="cancelDemande(item._id)"
+                          :loading="trashLoading"
+                        >
                           <v-icon>fas fa-trash-alt</v-icon>
                         </v-btn>
                       </div>
@@ -167,10 +174,12 @@ export default {
     Demandes: [],
     applications: [],
     states: ["إكتمل", "جاري", "ملغى"],
-    loaded: false
+    loaded: false,
+    trashLoading: false
   }),
   created() {
-    DemandesService.getDemandes(this.$store.state.currentUser)
+    let Demandesobj = { ...this.$store.state.currentUser, ...{ demandTotal: "3" } };
+    DemandesService.getDemandes(Demandesobj)
       .then(resp => {
         this.loaded = true;
         this.Demandes = resp.data.status;
@@ -185,10 +194,20 @@ export default {
       if (itemState === 0) {
         return "teal";
       } else if (itemState === 1) {
-        return "deep-orange";
+        return "orange";
       } else {
         return "red";
       }
+    },
+    cancelDemande(_id) {
+      this.trashLoading = true;
+      DemandesService.cancelDemande({
+        id: _id,
+        state: 2
+      }).then(() => {
+        this.trashLoading = false;
+        this.$router.go();
+      });
     }
   }
 };

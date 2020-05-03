@@ -1,6 +1,6 @@
 <template dir="rtl">
   <div class="background">
-    <v-hover open-delay="200" v-slot:default="{ hover }">
+    <v-hover v-slot:default="{ hover }">
       <v-card
         :elevation="hover ? 16 : 2"
         class="mx-auto"
@@ -21,11 +21,15 @@
             <div class="col-md-4">
               <v-label><h3>وقت العودة</h3></v-label>
             </div>
-            <div class="col-md-5" style="margin-right: 30px">
+            <div class="col-md-6 ">
               <v-time-picker
+                @click:hour="HandleHours"
                 color="#d41b45"
                 v-model="tempsRetour"
-                width="180px"
+                width="250px"
+                format="24hr"
+                :allowed-hours="getAllowedHours"
+                :allowed-minutes="getAllowedMinutes"
               ></v-time-picker>
             </div>
           </v-row>
@@ -41,18 +45,23 @@
 
           <div class="text-center">
             <v-btn
-              @click="verify"
+              @click="isClicked = !isClicked"
+              :class="
+                hover && !fieldControl ? 'mt--10 glowing-border' : 'mt--10'
+              "
+              :ripple="{ class: 'red--text' }"
               class="title "
+              :disabled="fieldControl"
               color="#D41B45"
-              dark
               height="30px"
               rounded
               width="100px"
             >
-              تقييم
+              <span class="fontwhite">
+                تقييم
+              </span>
             </v-btn>
           </div>
-
           <div class="mt-5" v-if="isClicked">
             <v-row align="center" justify="center">
               <v-col align-self="center" cols="4" justify="center">
@@ -89,21 +98,26 @@
                 </v-alert>
               </v-col>
             </v-row>
-            <v-row align="center" justify="center">
-              <v-col align-self="center" cols="3" justify="center">
-                <v-alert dense text type="success" v-if="state == 'Supermodel'">
-                  الخطر ضعيف
+            <v-row
+              align="center"
+              justify="center"
+              v-if="error !== ''"
+              class="my-0 py-0"
+            >
+              <v-col align="center" cols="5" justify="center" class="my-0 py-0">
+                <v-alert dense text type="error" class="my-0 py-2">
+                  {{ error }}
                 </v-alert>
               </v-col>
             </v-row>
 
-            <div class="text-center">
+            <div class="text-center pt-5">
               <v-btn
-                @click="accept"
+                @click="verify"
                 class="title ml-3"
                 color="#D41B45"
                 dark
-                height="50px"
+                height="40px"
                 rounded
                 width="120px"
               >
@@ -114,7 +128,7 @@
                 class="title mr-3"
                 color="#D41B45"
                 dark
-                height="50px"
+                height="40px"
                 rounded
                 width="120px"
               >
@@ -130,21 +144,15 @@
 
 <script>
 import DemandesService from "@/services/DemandesService";
-import { mapActions } from "vuex";
 
 export default {
   name: "FormPage",
-  props: {
-    isClicked: {
-      Boolean,
-      default: false
-    }
-  },
   data: () => ({
-    valid: true,
-    state: "Supermodel",
-    score: "75%",
+    valid: false,
+    error: "",
     reason: "",
+    isClicked: false,
+    isMinutesAllowed: true,
     zone: "",
     tempsRetour: "",
     reasonRules: [v => !!v || "الرجاء ادخال سبب الخروج"],
@@ -153,7 +161,7 @@ export default {
       "ساقية الزيت",
       "ساقية الدائر",
       "العين صفاقس",
-      "قرمدة",
+      "Gremda",
       "طينة",
       "الشيحية",
       "المحرس",
@@ -173,39 +181,69 @@ export default {
       "النصر"
     ]
   }),
-  methods: {
-    ...mapActions(["addDemande"]),
-    async verify() {
-      if (!this.isClicked) {
-        this.isClicked = true;
+  computed: {
+    getAllowedMinutes() {
+      let allowed = [];
+      console.log(this.tempsRetour);
+      if (this.isMinutesAllowed) {
+        allowed = [];
+        for (let i = 0; i < 60; i += 5) {
+          allowed.push(i);
+        }
       } else {
-        this.isClicked = false;
+        let mins = new Date().getMinutes();
+        for (let i = 0; i < 60; i += 5) {
+          if (i >= mins) {
+            mins = i;
+            break;
+          }
+        }
+        allowed = [];
+        for (let i = mins; i < 60; i += 5) {
+          allowed.push(i);
+        }
       }
-
+      return allowed;
+    },
+    fieldControl() {
+      if (this.tempsRetour === "" || this.zone === "" || this.reason === "") {
+        return true;
+      } else {
+        let currH = new Date().getHours();
+        let currM = new Date().getMinutes();
+        let time = this.tempsRetour.split(":");
+        console.log(time);
+        if (time[0] == currH && time[1] <= currM) return true;
+        return false;
+      }
+    }
+  },
+  methods: {
+    async verify() {
       try {
-        let resp = await DemandesService.addDemandes({
+        await DemandesService.addDemandes({
           cin: this.$store.state.currentUser.cin,
           zone: this.zone,
           where: "sfax",
           tempsRetour: this.tempsRetour,
           reason: this.reason
+        }).then(() => {
+          this.$router.replace({ name: "UserDashboard" });
         });
-        console.log(resp);
-        this.addDemande(resp.data.status);
-        this.score = resp.data.status.score;
       } catch (e) {
-        console.log(e.response.data);
+        this.error = e.response.data.err;
       }
     },
-    accept() {
+    reject() {
       this.$router.replace({ name: "UserDashboard" });
     },
-    async reject() {
-      try {
-        let resp = await DemandesService.deleteDemande();
-        console.log(resp);
-      } catch (e) {
-        console.log(e.response.data);
+    getAllowedHours: v => v >= new Date().getHours(),
+    HandleHours(payload) {
+      let date = new Date().getHours();
+      if (payload.toString() == date) {
+        this.isMinutesAllowed = false;
+      } else {
+        this.isMinutesAllowed = true;
       }
     }
   }
@@ -223,8 +261,15 @@ export default {
   padding-top: 35px;
   padding-bottom: 100px;
 }
+.fontwhite {
+  color: white !important;
+}
 
 h3 {
   color: #d41b45;
+}
+>>> .glowing-border {
+  box-shadow: 0px 0 10px 1px #df0100, /* inner white */ 0px 0 10px 1px #770000,
+    /* middle magenta */ 0 0 10px 1px #6b2028 !important;
 }
 </style>

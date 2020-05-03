@@ -19,15 +19,20 @@ router.post("/add", (req, res) => {
 
 // accept demande (state -> 1)
 //deny demande (state -> 2)
-router.put("/state/:id", (req, res) => {
+//changed to body
+router.put("/state/", (req, res) => {
   DemandeController.changeState(req, res);
 });
 
 //get all demands for user connected
 router.get("/", authenticate.verifyOrdinaryUser, (req, res, next) => {
+  let demandTotal = 0;
+  if (req.body.demandTotal) demandTotal = req.body.demandTotal;
   Demande.find({
     cin: req.user.cin
   })
+    .sort({ date: -1 })
+    .limit(demandTotal)
     .then(resp => {
       res.statusCode = 200;
       res.setHeader("Content-Type", "application/json");
@@ -107,10 +112,10 @@ router.get(
 );
 //get demande by id for a specific user
 router
-  .route("/:demandId")
+  .route("/")
   .get(authenticate.verifyOrdinaryUser, (req, res, next) => {
     Demande.find({
-      _id: req.params.demandId,
+      _id: req.body.demandId,
       cin: req.user.cin
     })
       .then(demand => {
@@ -136,7 +141,7 @@ router
   .put(authenticate.verifyOrdinaryUser, (req, res, next) => {
     Demande.update(
       {
-        _id: req.params.demandId,
+        _id: req.body.demandId,
         cin: req.user.cin
       },
       {
@@ -169,7 +174,7 @@ router
 
   .delete(authenticate.verifyOrdinaryUser, (req, res, next) => {
     Demande.remove({
-      _id: req.params.demandId
+      _id: req.body.demandId
       //'cin': req.user.cin
     })
       .then(resp => {

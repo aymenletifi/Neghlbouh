@@ -36,7 +36,7 @@
             v-if="error !== ''"
             width="80%"
           >
-            {{ error }}
+            {{ error.message }}
           </v-alert>
         </v-col>
       </v-row>
@@ -120,7 +120,7 @@
         <!-- Forgot Password section -->
         <v-row justify="center">
           <v-col align="center" cols="9">
-            <router-link to="/Reset">
+            <router-link to="/ResetMail">
               <a
                 @click="removeModal"
                 class=" font-weight-bold font-login-pass"
@@ -185,8 +185,7 @@ export default {
           this.loading = false;
         } catch (e) {
           this.loading = false;
-          console.log(e.response.data.err);
-          this.error = e.response.data;
+          this.error = e.response.data.err;
         }
       } else {
         //to implement notification v-if here

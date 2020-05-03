@@ -58,17 +58,20 @@ module.exports = {
         return Area.find({});
       })
       .then(areasFound => {
-        console.log(areasFound);
+        let result = {
+          faible: [],
+          moyen: [],
+          grave: []
+        };
+        result.faible = areasFound.filter(el => el.countPeople <= 10);
+        result.moyen = areasFound.filter(
+          el => el.countPeople > 10 && el.countPeople < 30
+        );
+        result.grave = areasFound.filter(el => el.countPeople > 30);
         res.setHeader("Content-Type", "application/json");
-        let returnedValue = areasFound.map(area => {
-          return {
-            name: area.name,
-            number: area.countPeople
-          };
-        });
         res.json({
           success: true,
-          status: returnedValue
+          data: result
         });
       })
       .catch(e => res.json({ err: e.message }));

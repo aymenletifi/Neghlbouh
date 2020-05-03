@@ -19,6 +19,7 @@ router.use(bodyParser.json());
 router.post("/signup", (req, res, next) => {
   User.register(
     new User({
+      area: req.body.area,
       cin: req.body.cin,
       name: req.body.name,
       email: req.body.email,
@@ -28,9 +29,17 @@ router.post("/signup", (req, res, next) => {
     req.body.password,
     (err, user) => {
       if (err) {
-        res.statusCode = 401;
+        console.log(err);
+        let message = "";
+        if (err.message) message = err.message;
+        if (err.errors) {
+          Object.keys(err.errors).forEach(key => {
+            message += err["errors"][key].message + " , ";
+          });
+        }
+        res.statusCode = 403;
         res.setHeader("Content-Type", "application/json");
-        res.json({ err: err });
+        res.json({ err: { message: message } });
       } else {
         passport.authenticate("local")(req, res, () => {
           res.statusCode = 200;
@@ -42,15 +51,29 @@ router.post("/signup", (req, res, next) => {
   );
 });
 
-router.post("/signin", passport.authenticate("local"), (req, res) => {
-  const token = authenticate.getToken({ _id: req.user._id });
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "application/json");
-  let user = req.user.toObject();
+router.post("/signin", (req, res, next) => {
+  passport.authenticate("local", function(err, user, info) {
+    if (err) {
+      return next(err); // will generate a 500 error
+    }
+    if (!user) {
+      res.statusCode = 403;
+      return res.send({ err: { message: "Cin or password are incorrect!" } });
+    }
+    req.login(user, loginErr => {
+      if (loginErr) {
+        return next(loginErr);
+      }
+      const token = authenticate.getToken({ _id: req.user._id });
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      let user = req.user.toObject();
+      delete user.hash;
+      delete user.salt;
 
-  delete user.hash;
-  delete user.salt;
-  res.json({ success: true, token: token, user: user });
+      return res.json({ success: true, token: token, user: user });
+    });
+  })(req, res, next);
 });
 
 router.route("/").post((req, res, next) => {
@@ -73,6 +96,10 @@ router.route("/").put(authenticate.verifyOrdinaryUser, (req, res, next) => {
   if (req.body.cin !== "") {
     delete fieldToChange.init;
     fieldToChange.cin = req.body.cin;
+  }
+  if (req.body.area !== "") {
+    delete fieldToChange.init;
+    fieldToChange.area = req.body.area;
   }
   if (req.body.email !== "") {
     delete fieldToChange.init;
@@ -186,6 +213,7 @@ router.post("/reset-password", (req, res, next) => {
               _id: resetPassword.id
             });
           token = crypto.randomBytes(32).toString("hex"); //creating the token to be sent to the forgot password form (react)
+
           bcrypt
             .genSalt(10)
             .then(salt => {
@@ -226,7 +254,7 @@ router.post("/reset-password", (req, res, next) => {
                           "<p>To reset your password, complete this form:</p>" +
                           '<a href="http://' +
                           config.clientUrl +
-                          "reset/?id=" +
+                          "reset?id=" +
                           user.id +
                           "&token=" +
                           token +
@@ -237,6 +265,8 @@ router.post("/reset-password", (req, res, next) => {
                       transporter
                         .sendMail(mailOptions)
                         .then(info => {
+                          res.statusCode = 200;
+                          res.setHeader("Content-Type", "application/json");
                           res.json({
                             success: true,
                             message: "Check your mail to reset your password."
@@ -289,6 +319,8 @@ router.post("/store-password", (req, res, next) => {
                 user.save();
                 ResetPassword.deleteOne({ _id: resetPassword.id })
                   .then(msg => {
+                    res.statusCode = 200;
+                    res.setHeader("Content-Type", "application/json");
                     res.json({
                       success: true,
                       message: "Password Updated successfully."
@@ -311,20 +343,22 @@ router.post("/store-password", (req, res, next) => {
 });
 
 router.post("/verify-token", (req, res, next) => {
-  //handles the new password from the front
-  const token = req.body.token;
-  ResetPassword.findOne({ resetPasswordToken: token })
+  //verify if the reset is expired or not
+  const id = req.body.userId;
+  ResetPassword.findOne({ userId: id })
     .then(function(resetPassword) {
       if (!resetPassword) {
         err = new Error("Invalid or expired reset token.");
         err.status = 404;
         next(err);
       } else {
-        err.status = 200;
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json");
         res.json({ success: true, message: "token is valid!" });
       }
     })
     .catch(error => {
+      console.log(error);
       next(error);
     });
 });
