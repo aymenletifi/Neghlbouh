@@ -17,11 +17,11 @@
             required
             v-model="reason"
           ></v-text-field>
-          <v-row>
-            <div class="col-md-4">
-              <v-label><h3>وقت العودة</h3></v-label>
-            </div>
-            <div class="col-md-6 ">
+          <div class="col-md-4 ">
+            <v-label><h3>وقت العودة</h3></v-label>
+          </div>
+          <v-row justify="center" align="center">
+            <v-col md="6" align="center" justify="center">
               <v-time-picker
                 @click:hour="HandleHours"
                 color="#d41b45"
@@ -31,11 +31,11 @@
                 :allowed-hours="getAllowedHours"
                 :allowed-minutes="getAllowedMinutes"
               ></v-time-picker>
-            </div>
+            </v-col>
           </v-row>
           <v-label><h3>الوجهة</h3></v-label>
           <v-select
-            :items="items"
+            :items="areaCal"
             :rules="[v => !!v || 'الرجاء اختيار الوجهة']"
             class="txt"
             color="#d41b45"
@@ -63,41 +63,6 @@
             </v-btn>
           </div>
           <div class="mt-5" v-if="isClicked">
-            <v-row align="center" justify="center">
-              <v-col align-self="center" cols="4" justify="center">
-                <v-alert
-                  border="left"
-                  color="red"
-                  colored-border
-                  elevation="2"
-                  icon="fas fa-lungs-virus"
-                >
-                  عدد المصابين : 5
-                </v-alert>
-              </v-col>
-              <v-col align-self="center" cols="4" justify="center">
-                <v-alert
-                  border="left"
-                  color="red"
-                  colored-border
-                  elevation="2"
-                  icon="fas fa-head-side-mask"
-                >
-                  عدد المواطنين 16
-                </v-alert>
-              </v-col>
-              <v-col align-self="center" cols="4" justify="center">
-                <v-alert
-                  border="left"
-                  color="red"
-                  colored-border
-                  elevation="2"
-                  icon="fas fa-house-user"
-                >
-                  عدد حاملي سوار الحماية: 0
-                </v-alert>
-              </v-col>
-            </v-row>
             <v-row
               align="center"
               justify="center"
@@ -125,7 +90,7 @@
               </v-btn>
               <v-btn
                 @click="reject"
-                class="title mr-3"
+                class="title mr-3 mt-2"
                 color="#D41B45"
                 dark
                 height="40px"
@@ -144,47 +109,34 @@
 
 <script>
 import DemandesService from "@/services/DemandesService";
+import data from "../store/data.json";
 
 export default {
   name: "FormPage",
-  data: () => ({
-    valid: false,
-    error: "",
-    reason: "",
-    isClicked: false,
-    isMinutesAllowed: true,
-    zone: "",
-    tempsRetour: "",
-    reasonRules: [v => !!v || "الرجاء ادخال سبب الخروج"],
-    select: null,
-    items: [
-      "ساقية الزيت",
-      "ساقية الدائر",
-      "العين صفاقس",
-      "Gremda",
-      "طينة",
-      "الشيحية",
-      "المحرس",
-      "قرقنة",
-      "الصخيرة",
-      "عقارب",
-      "الحنشة",
-      "جبنيانة",
-      "بئر علي صفاقس",
-      "الغريبة",
-      "العامرة",
-      "العوابد - الخزانات",
-      "الناظور",
-      "الحاجب",
-      "حزق",
-      "الأعشاش",
-      "النصر"
-    ]
-  }),
+  data() {
+    return {
+      user: this.$store.state.currentUser,
+      valid: false,
+      error: "",
+      reason: "",
+      isClicked: false,
+      isMinutesAllowed: true,
+      zone: "",
+      tempsRetour: "",
+      reasonRules: [v => !!v || "الرجاء ادخال سبب الخروج"],
+      select: null
+    };
+  },
   computed: {
+    areaCal() {
+      if (!this.user) {
+        return data.allAreas;
+      } else {
+        return data.areas[this.user.city];
+      }
+    },
     getAllowedMinutes() {
       let allowed = [];
-      console.log(this.tempsRetour);
       if (this.isMinutesAllowed) {
         allowed = [];
         for (let i = 0; i < 60; i += 5) {
@@ -212,7 +164,6 @@ export default {
         let currH = new Date().getHours();
         let currM = new Date().getMinutes();
         let time = this.tempsRetour.split(":");
-        console.log(time);
         if (time[0] == currH && time[1] <= currM) return true;
         return false;
       }

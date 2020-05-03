@@ -27,7 +27,7 @@
                 v-if="error !== ''"
                 width="80%"
               >
-                {{ error }}
+                {{ error.err.message || error.err || error }}
               </v-alert>
             </v-col>
           </v-row>
@@ -60,6 +60,7 @@
                     :class="hover ? 'mt--10 glowing-border' : 'mt--10'"
                     :disabled="!valid"
                     :ripple="{ class: 'red--text' }"
+                    :loading="loading"
                     @click="validate"
                     color="#df0100"
                     height="225%"
@@ -89,6 +90,7 @@ export default {
   data() {
     return {
       email: "",
+      loading: false,
       valid: false,
       show1: false,
       error: "",
@@ -114,7 +116,6 @@ export default {
           let resp = await authController.sendResetMail({
             email: this.email
           });
-          console.log(resp);
           this.pressLogin(false);
           if (this.$route.name !== "Home") {
             this.$router.replace({ name: "Home" });
@@ -123,12 +124,11 @@ export default {
           this.loading = false;
         } catch (e) {
           this.loading = false;
-          console.log(e.response.data.err);
+
           this.error = e.response.data;
         }
       } else {
         //to implement notification v-if here
-        console.log("validation failed");
       }
     }
   }

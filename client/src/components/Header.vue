@@ -5,21 +5,22 @@
     dir="rtl"
     style="padding-bottom: 30px;height: 40px; margin-bottom: 10px; z-index:10;"
   >
-    <v-app-bar color="white">
+    <v-app-bar color="white" style="position: fixed ;">
       <v-app-bar-nav-icon
         @click="drawer = true"
-        class="d-flex d-md-none"
+        class="d-flex d-md-none "
       ></v-app-bar-nav-icon>
       <v-spacer class="d-flex d-md-none"></v-spacer>
-      <v-img
-        alt="Neghlbouh"
-        class="shrink mr-1"
-        contain
-        src="../assets/logo.png"
-        style="margin-left: 20px"
-        transition="scale-transition"
-        width="150"
-      />
+      <a href="Home"
+        ><v-img
+          alt="Neghlbouh"
+          class="shrink mr-1"
+          contain
+          src="../assets/logo.png"
+          style="margin-left: 20px"
+          transition="scale-transition"
+          width="150"
+      /></a>
       <v-toolbar-title class="d-none d-md-flex">
         <!--  User Dashboard --->
         <v-hover
@@ -85,7 +86,13 @@
                 'Navbar  cool-link '
               )
             "
-            :to="{ name: item.link }"
+            :to="
+              item.name === $store.state.langPack.HeaderMenu.demande
+                ? $store.state.currentUser !== undefined
+                  ? 'FormPage'
+                  : 'Home'
+                : { name: item.link }
+            "
             depressed
             elevation="0"
             v-ripple="false"
@@ -197,7 +204,7 @@
       </v-toolbar-title>
     </v-app-bar>
     <!-- Responsive Menu here !! -->
-    <v-navigation-drawer absolute temporary v-model="drawer">
+    <v-navigation-drawer absolute temporary v-model="drawer" style="position: fixed ;">
       <v-list dense nav>
         <v-list-item-group>
           <!-- userDash Button -->
@@ -265,7 +272,13 @@
                     'Navbar  cool-link listItem '
                   )
                 "
-                :to="{ name: item.link }"
+                :to="
+                  item.name === $store.state.langPack.HeaderMenu.demande
+                    ? $store.state.currentUser !== undefined
+                      ? 'FormPage'
+                      : 'Home'
+                    : { name: item.link }
+                "
                 depressed
                 elevation="0"
                 v-ripple="false"
@@ -366,7 +379,8 @@ export default {
         {
           name: this.$store.state.langPack.HeaderMenu.demande,
           icon: "fas fa-paper-plane",
-          link: "FormPage"
+          link:
+            this.$store.state.currentUser !== undefined ? "FormPage" : "Home"
         },
         {
           name: this.$store.state.langPack.HeaderMenu.infoPage,

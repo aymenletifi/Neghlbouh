@@ -107,7 +107,9 @@
     <div v-else>
       <v-alert class="mt-12" prominent type="error">
         <v-row align="center">
-          <v-col class="grow">{{ error }}</v-col>
+          <v-col class="grow">{{
+            error.err.message || error.err || error
+          }}</v-col>
         </v-row>
       </v-alert>
     </div>
@@ -141,7 +143,7 @@ export default {
   },
   // verifyToken must be implemented
   created() {
-    authController.verifyToken({ userId : this.id }).then(resp => {
+    authController.verifyToken({ userId: this.id }).then(resp => {
       if (resp.data.success == true) {
         this.tokenValid = true;
       }
@@ -159,25 +161,24 @@ export default {
       if (this.valid) {
         this.loading = true;
         try {
-          let resp = await authController.reset({
+          await authController.reset({
             token: this.$route.query.token,
             userId: this.$route.query.id,
             //cin: this.$store.state.currentUser.cin,
             password: this.newPassword
           });
-          console.log(resp);
+
           if (this.$route.name !== "SignIn") {
             this.$router.replace({ name: "SignIn" });
           }
           this.loading = false;
         } catch (e) {
           this.loading = false;
-          console.log(e.response.data.err);
+
           this.error = e.response.data;
         }
       } else {
         //to implement notification v-if here
-        console.log("validation failed");
       }
     }
   }

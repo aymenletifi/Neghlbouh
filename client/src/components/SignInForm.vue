@@ -112,7 +112,7 @@
             <em>
               {{ text.noAcc }}
             </em>
-            <a class=" font-weight-bold font-login-pass" href="#">
+            <a class=" font-weight-bold font-login-pass" href="SignUp">
               {{ text.makeAccount }}
             </a>
           </v-col>
@@ -176,7 +176,7 @@ export default {
             cin: this.CIN,
             password: this.password
           });
-          console.log(resp);
+
           this.pressLogin(false);
           if (this.$route.name !== "Home") {
             this.$router.replace({ name: "Home" });
@@ -189,7 +189,6 @@ export default {
         }
       } else {
         //to implement notification v-if here
-        console.log("validation failed");
       }
     },
     removeModal() {

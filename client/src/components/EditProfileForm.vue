@@ -5,6 +5,7 @@
       class="mx-auto cardc"
       dir="rtl"
       max-width="700"
+      max-height="550"
     >
       <div>
         <v-form class="form" ref="form" method="put">
@@ -18,7 +19,7 @@
               ></v-text-field>
             </v-col>
             <v-col md="6">
-              <v-label><h3>الإسم و اللقب</h3></v-label>
+              <v-label><h3>رقم بطاقة التعريف</h3></v-label>
               <v-text-field
                 :rules="nameRules"
                 color="#d41b45"
@@ -33,7 +34,7 @@
             </v-col>
             <v-col md="6">
               <v-label><h3>المنطقة</h3></v-label>
-              <v-select :items="items" v-model="area"></v-select>
+              <v-select :items="areaCal" v-model="area"></v-select>
             </v-col>
           </v-row>
 
@@ -117,6 +118,7 @@
 </template>
 <script>
 import authController from "../services/AuthenticationService";
+import data from "../store/data.json";
 
 export default {
   name: "EditProfileForm",
@@ -144,55 +146,7 @@ export default {
       cin: this.user.cin,
       phone: this.user.phone,
       email: this.user.email,
-      cities: [
-        "أريانة",
-        "باجة",
-        "بنزرت",
-        "بن عروس",
-        "تطاوين",
-        "توزر",
-        "تونس",
-        "جندوبة",
-        "زغوان",
-        "سليانة",
-        "سوسة",
-        "سيدي بوزيد",
-        "صفاقس",
-        "قابس",
-        "قبلي",
-        "القصرين",
-        "قفصة",
-        "القيروان",
-        "الكاف",
-        "مدنين",
-        "المنستير",
-        "منوبة",
-        "المهدية",
-        "نابل"
-      ],
-      items: [
-        "ساقية الزيت",
-        "ساقية الدائر",
-        "العين صفاقس",
-        "قرمدة",
-        "طينة",
-        "الشيحية",
-        "المحرس",
-        "قرقنة",
-        "الصخيرة",
-        "عقارب",
-        "الحنشة",
-        "جبنيانة",
-        "بئر علي صفاقس",
-        "الغريبة",
-        "العامرة",
-        "العوابد - الخزانات",
-        "الناظور",
-        "الحاجب",
-        "حزق",
-        "الأعشاش",
-        "النصر"
-      ],
+      cities: data.cities,
       phoneRules: [
         v => (!isNaN(parseFloat(v)) && !isNaN(v - 0)) || "يجب أن يكون رقم"
       ],
@@ -202,17 +156,33 @@ export default {
       emailRules: [v => /.+@.+\..+/.test(v) || "E-mail must be valid"]
     };
   },
-  computed: {},
+  computed: {
+    areaCal() {
+      if (!this.user) {
+        return data.allAreas;
+      } else {
+        return data.areas[this.city];
+      }
+    }
+  },
   methods: {
     updatePass() {
       this.isClicked = !this.isClicked;
+    },
+    updateCurrentState({ name, email, city, cin, area, phone }) {
+      this.$store.state.currentUser.name = name;
+      this.$store.state.currentUser.email = email;
+      this.$store.state.currentUser.city = city;
+      this.$store.state.currentUser.cin = cin;
+      this.$store.state.currentUser.area = area;
+      this.$store.state.currentUser.phone = phone;
     },
     async validate() {
       this.$refs.form.validate();
       if (this.valid) {
         this.loading = true;
         try {
-          let resp = await authController.update({
+          await authController.update({
             oldPassword: this.oldPassword,
             newPassword: this.newPassword,
             name: this.name,
@@ -222,17 +192,20 @@ export default {
             area: this.area,
             phone: this.phone
           });
+          this.updateCurrentState({
+            name: this.name,
+            email: this.email,
+            city: this.city,
+            cin: this.cin,
+            area: this.area,
+            phone: this.phone
+          });
           this.loading = false;
           this.done = true;
-          console.log(resp);
         } catch (e) {
           this.loading = false;
-          console.log(e.response.data);
           this.error = e.response.data.err;
         }
-      } else {
-        //to implement notification v-if here
-        console.log("validation failed");
       }
     },
     button() {
@@ -262,7 +235,7 @@ export default {
 
 .cardc {
   padding-bottom: 20px;
-  height: 520px;
+  height: 100%;
 }
 
 h3 {
